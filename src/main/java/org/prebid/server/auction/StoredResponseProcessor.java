@@ -250,10 +250,12 @@ public class StoredResponseProcessor {
     private void validateStoredSeatBid(List<SeatBid> seatBids) {
         for (final SeatBid seatBid : seatBids) {
             if (StringUtils.isEmpty(seatBid.getSeat())) {
+                logger.warn("Seat bid rejected: Missing seat for stored response.");
                 throw new InvalidRequestException("Seat can't be empty in stored response seatBid");
             }
 
             if (CollectionUtils.isEmpty(seatBid.getBid())) {
+                logger.warn("Seat bid rejected: No bids in stored response seatBid.");
                 throw new InvalidRequestException("There must be at least one bid in stored response seatBid");
             }
         }
@@ -351,8 +353,19 @@ public class StoredResponseProcessor {
                                                         Map<String, BidRejectionTracker> bidRejectionTrackers) {
 
         if (CollectionUtils.isEmpty(storedAuctionResponses)) {
+            logger.debug("No stored auction responses to merge.");
             return auctionParticipations;
         }
+
+        if (storedSeatBid != null) {
+           logger.debug("Merging stored bid for bidder '{}'. Stored seat bid size: {}.",
+            storedSeatBid.getSeat(), storedSeatBid.getBid().size());
+        }
+
+        if (auctionParticipation == null) {
+           logger.info("No live bidder response for '{}'. Using only stored response.", 
+            storedSeatBid != null ? storedSeatBid.getSeat() : "unknown bidder");
+}        
 
         final Map<String, AuctionParticipation> bidderToAuctionParticipation = auctionParticipations.stream()
                 .collect(Collectors.toMap(AuctionParticipation::getBidder, Function.identity()));

@@ -1147,10 +1147,30 @@ public class ExchangeService {
         return !CollectionUtils.containsAny(requestCurrencies, bidAcceptableCurrencies);
     }
 
+    // Assumes that:
+    // The Bid class includes a getFloor() method to retrieve the floor price. 
+    // The BidRejectionTracker class provides access to the lastRejectedBid.
     private static Future<BidderResponse> processReject(AuctionContext auctionContext,
                                                         BidRejectionReason bidRejectionReason,
                                                         List<BidderError> warnings,
                                                         String bidderName) {
+
+        String price = null;
+        String floor = null;
+
+        final BidRejectionTracker bidRejectionTracker = auctionContext.getBidRejectionTrackers().get(bidderName);
+        if (bidRejectionTracker != null && bidRejectionTracker.getLastRejectedBid() != null) {
+                price = bidRejectionTracker.getLastRejectedBid().getPrice() != null
+                        ? bidRejectionTracker.getLastRejectedBid().getPrice().toString()
+                        : "unknown";
+                floor = bidRejectionTracker.getLastRejectedBid().getFloor() != null
+                        ? bidRejectionTracker.getLastRejectedBid().getFloor().toString()
+                        : "unknown";
+        }
+
+        // Log the rejection reason along with bid details
+        logger.warn("Bidder '{}' rejected: Reason '{}', Bid Price: '{}', Bid Floor: '{}'.",
+            bidderName, bidRejectionReason, price, floor);
 
         auctionContext.getBidRejectionTrackers()
                 .get(bidderName)
